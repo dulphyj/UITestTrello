@@ -1,0 +1,64 @@
+plugins {
+    id 'java'
+}
+
+group = 'ui.trello'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //testNG
+    testImplementation group: 'org.testng', name: 'testng', version: '7.9.0'
+
+    //Cucumber
+    implementation group: 'io.cucumber', name: 'cucumber-java', version: '7.4.1'
+    implementation group: 'io.cucumber', name: 'cucumber-testng', version: '7.4.1'
+    testImplementation group: 'io.cucumber', name: 'cucumber-picocontainer', version: '7.4.1'
+
+    //Selenium
+    implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '4.18.1'
+
+    //logging
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.17.2'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.0-alpha7'
+
+    //Other
+    implementation group: 'io.github.bonigarcia', name: 'webdrivermanager', version: '5.6.4'
+}
+
+test {
+    useTestNG()
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+task executeFeatures() {
+    dependsOn assemble, testClasses
+    doLast {
+        javaexec {
+            systemProperty "email", project.getProperty("email")
+            systemProperty "password", project.getProperty("password")
+            systemProperty "webUrl", project.getProperty("webUrl")
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            systemProperty "cucumber.publish.quiet", true
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'pretty',
+                    '--plugin', 'html:reports/cucumber-reports/cucumber-report.html',
+                    '--plugin', 'json:reports/cucumber-reports/CucumberTestReport.json',
+                    '--plugin', 'rerun:reports/cucumber-reports/rerun.txt',
+                    '--glue', 'steps',
+                    'src/test/resources/features',
+                    '--tags', cucumberOptions
+            ]
+        }
+    }
+}
